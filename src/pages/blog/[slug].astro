@@ -1,0 +1,38 @@
+---
+import { getCollection, getEntry, render } from 'astro:content';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+
+// 静态路径生成，build打包必须要有这段代码
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map(post => ({
+    params: { slug: post.slug },
+  }));
+}
+
+const { slug } = Astro.params;
+const post = await getEntry('blog', slug);
+if (!post) return Astro.redirect('/404');
+const { Content } = await render(post);
+---
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width" />
+  <title>{post.data.title} | 赵恒辉的个人博客</title>
+</head>
+<body>
+  <Header />
+  <main style="max-width:700px;margin:3rem auto;padding:0 1rem;text-align:center;">
+    <h1>{post.data.title}</h1>
+    <time>发布时间：{new Date(post.data.pubDate).toLocaleDateString('zh-CN')}</time>
+    <hr style="margin:2rem 0;">
+    <div style="text-align:left;">
+      <Content />
+    </div>
+  </main>
+  <Footer />
+</body>
+</html>
