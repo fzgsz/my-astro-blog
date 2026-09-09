@@ -1,20 +1,18 @@
 ---
-import { type CollectionEntry, getCollection, render } from 'astro:content';
-import BlogPost from '../../layouts/BlogPost.astro';
+import { getEntry, render } from 'astro:content';
+// 获取url里的slug参数
+const { slug } = Astro.params;
+// 根据slug找到对应的blog文章
+const post = await getEntry('blog', slug);
 
-export async function getStaticPaths() {
-	const posts = await getCollection('blog');
-	return posts.map((post) => ({
-		params: { slug: post.id },
-		props: post,
-	}));
-}
-type Props = CollectionEntry<'blog'>;
+// 找不到文章直接跳404
+if (!post) return Astro.redirect('/404');
 
-const post = Astro.props;
 const { Content } = await render(post);
 ---
-
-<BlogPost {...post.data}>
-	<Content />
-</BlogPost>
+<main style="max-width:700px;margin:3rem auto;padding:0 1rem;">
+  <h1>{post.data.title}</h1>
+  <time>发布时间：{new Date(post.data.pubDate).toLocaleDateString('zh-CN')}</time>
+  <hr style="margin:2rem 0;">
+  <Content />
+</main>

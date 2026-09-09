@@ -1,6 +1,5 @@
 ---
 title: "我的第一篇博客"
-date: 2026-09-08
 description: "测试文章"
 pubDate: 2026-09-08
 tags: ["学习笔记"]
