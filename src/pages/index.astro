@@ -2,16 +2,13 @@
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { getCollection } from 'astro:content';
-
-// 获取所有博客文章，按日期倒序
+// 获取所有博客文章，按 pubDate 发布日期倒序（最新放上面）
 const posts = (await getCollection('blog')).sort((a, b) => {
-  const dateA = a.data.date ? new Date(a.data.date) : new Date(0);
-  const dateB = b.data.date ? new Date(b.data.date) : new Date(0);
+  const dateA = a.data.pubDate ? new Date(a.data.pubDate) : new Date(0);
+  const dateB = b.data.pubDate ? new Date(b.data.pubDate) : new Date(0);
   return dateB.valueOf() - dateA.valueOf();
 });
-
 ---
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -31,7 +28,6 @@ const posts = (await getCollection('blog')).sort((a, b) => {
         <a href="mailto:2990710440@qq.com">Email</a>
       </div>
     </section>
-
     <section class="posts-section">
       <h2>📝 最新文章</h2>
       
@@ -42,8 +38,7 @@ const posts = (await getCollection('blog')).sort((a, b) => {
           {posts.map(post => (
             <li class="post-item">
               <a href={`/blog/${post.slug}`}>{post.data.title}</a>
-             <time>{post.data.date ? new Date(post.data.date).toLocaleDateString('zh-CN') : '无日期'}</time>
-
+             <time>{post.data.pubDate ? new Date(post.data.pubDate).toLocaleDateString('zh-CN') : '无日期'}</time>
             </li>
           ))}
         </ul>
@@ -53,7 +48,6 @@ const posts = (await getCollection('blog')).sort((a, b) => {
   <Footer />
 </body>
 </html>
-
 <style>
 .home-container {
   max-width: 72rem;
