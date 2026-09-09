@@ -1,27 +1,106 @@
 ---
-import BaseHead from '../components/BaseHead.astro';
-import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { getCollection } from 'astro:content';
+
+// 获取所有博客文章，按日期倒序
+const posts = (await getCollection('blog')).sort((a, b) => {
+  const dateA = a.data.date ? new Date(a.data.date) : new Date(0);
+  const dateB = b.data.date ? new Date(b.data.date) : new Date(0);
+  return dateB.valueOf() - dateA.valueOf();
+});
+
 ---
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="zh-CN">
-	<head>
-		<BaseHead title="我的个人博客" description="软件工程学习笔记、刷题与项目记录" />
-	</head>
-	<body>
-		<Header />
-		<main>
-			<h1>你好，同志</h1>
-			<p>欢迎来到赵恒辉的个人博客</p>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width" />
+  <title>赵恒辉的个人博客</title>
+</head>
+<body>
+  <Header />
+  <main class="home-container">
+    <section class="hero-section">
+      <h1>你好，同志</h1>
+      <p class="hero-subtitle">欢迎来到赵恒辉的个人博客</p>
+      
+      <div class="social-links">
+        <a href="https://github.com/fzgsz" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="mailto:2990710440@qq.com">Email</a>
+      </div>
+    </section>
 
-			<div class="social">
-				<a href="https://github.com/fzgsz">GitHub</a>
-				<a href="mailto:202483670127@nuist.edu.cn">Email</a>
-			</div>
+    <section class="posts-section">
+      <h2>📝 最新文章</h2>
+      
+      {posts.length === 0 ? (
+        <p class="empty-tip">文章持续整理更新中，后续将在这里发布技术笔记、学习心得与思考总结。</p>
+      ) : (
+        <ul class="post-list">
+          {posts.map(post => (
+            <li class="post-item">
+              <a href={`/blog/${post.slug}`}>{post.data.title}</a>
+             <time>{post.data.date ? new Date(post.data.date).toLocaleDateString('zh-CN') : '无日期'}</time>
 
-			<h2>📝最新文章</h2>
-			<p>去 src/content/blog 新建md文件写博客</p>
-		</main>
-		<Footer />
-	</body>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  </main>
+  <Footer />
+</body>
 </html>
+
+<style>
+.home-container {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+.hero-section h1 {
+  font-size: 3.5rem;
+  margin-bottom: 0.5rem;
+}
+.hero-subtitle {
+  font-size: 1.25rem;
+  color: #4b5563;
+}
+.social-links {
+  display: flex;
+  gap: 1.25rem;
+  justify-content: center;
+  margin: 1rem 0;
+}
+.social-links a {
+  color: #2563eb;
+  font-size:1.1rem;
+}
+.posts-section {
+  margin-top:4rem;
+}
+.posts-section h2 {
+  font-size:2rem;
+}
+.empty-tip {
+  color: #6b7280;
+  margin-top: 0.5rem;
+}
+.post-list {
+  list-style: none;
+  padding: 0;
+  max-width:600px;
+  margin: 0 auto;
+}
+.post-item {
+  margin: 0.75rem 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding:0.5rem;
+  border-bottom:1px solid #eee;
+}
+</style>
