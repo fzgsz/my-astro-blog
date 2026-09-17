@@ -1,63 +1,164 @@
-# Astro Starter Kit: Blog
+# 赵恒辉的个人博客
 
-```sh
-pnpm create astro@latest -- --template blog
+用 [Astro](https://astro.build) 搭的静态博客，源码在 GitHub，部署在 Vercel。
+写完推送，Vercel 自动上线。
+
+---
+
+## 写一篇新文章：四步
+
+### 第 1 步 · 创建文件
+
+在项目目录下运行：
+
+```bash
+pnpm new
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+它会依次问你三件事，一路回车也行：
 
-Features:
+| 问题 | 说明 | 例子 |
+| --- | --- | --- |
+| 文章标题 | 中文就行 | `用 Astro 建博客踩的坑` |
+| URL 标识 | 英文或拼音，决定文章链接长什么样 | `astro-blog-notes` |
+| 一句话描述 | 显示在首页卡片上，可留空 | `记录几个折腾很久才发现的问题` |
 
-- ✅ Minimal styling (make it your own!)
-- ✅ 100/100 Lighthouse performance
-- ✅ SEO-friendly with canonical URLs and Open Graph data
-- ✅ Sitemap support
-- ✅ RSS Feed support
-- ✅ Markdown & MDX support
+不想被一个个问，也可以一条命令写全：
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-├── public/
-├── src/
-│   ├── assets/
-│   ├── components/
-│   ├── content/
-│   ├── layouts/
-│   └── pages/
-├── astro.config.mjs
-├── README.md
-├── package.json
-└── tsconfig.json
+```bash
+pnpm new "用 Astro 建博客踩的坑" astro-blog-notes "记录几个折腾很久才发现的问题"
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+创建好的文件在 `src/content/blog/` 里，日期会自动填今天。
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+### 第 2 步 · 写正文
 
-The `src/content/` directory contains "collections" of related Markdown and MDX documents. Use `getCollection()` to retrieve posts from `src/content/blog/`, and type-check your frontmatter using an optional schema. See [Astro's Content Collections docs](https://docs.astro.build/en/guides/content-collections/) to learn more.
+用任何编辑器打开那个 `.md` 文件（VS Code、Typora，甚至记事本都行），
+从第二个 `---` 下面开始写。格式就是平时记笔记的 Markdown：
 
-Any static assets, like images, can be placed in the `public/` directory.
+```markdown
+## 小标题
 
-## 🧞 Commands
+正文段落。**加粗**、*斜体*、`行内代码`。
 
-All commands are run from the root of the project, from a terminal:
+- 列表项一
+- 列表项二
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`             | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
+> 引用一段话
 
-## 👀 Want to learn more?
+[链接文字](https://example.com)
+```
 
-Check out [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+> ⚠️ 文件开头两个 `---` 之间那几行是配置（frontmatter），**不要删**。
+> 想改标题或加标签，直接改里面的值即可。
 
-## Credit
+### 第 3 步 · 本地看效果
 
-This theme is based off of the lovely [Bear Blog](https://github.com/HermanMartinus/bearblog/).
+```bash
+pnpm dev
+```
+
+浏览器打开 http://localhost:4321 看效果——边写边保存，页面会自己刷新。
+写作期间让这个命令一直开着。
+
+### 第 4 步 · 发布上线
+
+```bash
+pnpm ship
+```
+
+它会先构建检查一遍：**有问题会告诉你错在哪，没问题才提交推送**，不会把坏版本发出去。
+Vercel 收到推送后自动部署，大约一分钟后线上就能看到。
+
+想给这次改动留个说明：
+
+```bash
+pnpm ship "新增一篇 Astro 笔记"
+```
+
+---
+
+## frontmatter 字段说明
+
+文件开头 `---` 之间那段，每个字段的作用：
+
+| 字段 | 必填 | 说明 |
+| --- | --- | --- |
+| `title` | ✅ | 文章标题 |
+| `description` | | 一句话描述。显示在首页卡片和搜索结果里，不写就自动截取正文开头 |
+| `pubDate` | ✅ | 发布日期。`pnpm new` 会自动填今天，格式 `2026-09-17` |
+| `updatedDate` | | 修改日期。填了会在文章顶部显示「最后更新于」 |
+| `heroImage` | | 封面图。把图片放进 `src/assets/`，这里写 `../../assets/文件名.jpg` |
+| `tags` | | 标签，写成 `["学习笔记", "Astro"]`。会显示在文章卡片上，并进入首页的标签筛选 |
+| `featured` | | 填 `true` 会出现在首页「⭐ 精选」区单独展示 |
+
+一个填满的例子：
+
+```yaml
+---
+title: "用 Astro 建博客踩的坑"
+description: "记录几个折腾很久才发现的问题"
+pubDate: 2026-09-17
+tags: ["学习笔记", "Astro"]
+featured: false
+---
+```
+
+---
+
+## 命令速查
+
+| 命令 | 作用 | 什么时候用 |
+| --- | --- | --- |
+| `pnpm new` | 新建一篇文章 | 每次想写新东西 |
+| `pnpm dev` | 本地预览，支持热更新 | 写作时一直开着 |
+| `pnpm ship` | 构建 + 提交 + 推送上线 | 写完了要发出去 |
+| `pnpm build` | 只做构建检查 | 想确认有没有写错，但不发布 |
+| `pnpm preview` | 预览构建后的成品 | 检查上线后的真实效果 |
+
+---
+
+## 项目结构
+
+```
+src/
+├─ content/blog/        ← 文章都放这里（一个 .md 就是一个页面）
+├─ components/          组件：页头、页脚、文章卡片、邮箱等
+├─ layouts/             页面布局模板
+├─ pages/               各个页面
+│   ├─ index.astro      首页
+│   ├─ about.astro      关于页
+│   └─ blog/            文章列表页 + 详情页模板
+├─ styles/global.css    全局样式与字体
+├─ assets/              图片资源
+└─ consts.ts            ← 站点名称、作者、邮箱等，改这里全站生效
+```
+
+想改联系方式（邮箱、GitHub），改 `src/consts.ts` 一处就够，全站跟着变。
+
+---
+
+## 遇到问题
+
+**构建失败**
+看报错里的文件路径和行号。八成是 frontmatter 的引号或日期格式写错了——
+`title: "标题"` 的引号不能少，`pubDate` 得是 `2026-09-17` 这种格式。
+
+**`pnpm preview` 起不来，报 `SAFE_DELETE_BULK_CONFIRM_REQUIRED`**
+上次预览没关干净留了锁文件，删掉再试：
+
+```bash
+rm .astro/preview.json
+```
+
+**改了样式但页面没变**
+确认你开的是 `pnpm dev`（热更新）而不是 `pnpm preview`（读的是构建产物）。
+另外浏览器可以用 Ctrl+F5 强制刷新一下缓存。
+
+**`pnpm ship` 推送被拒**
+远程有别人的（或别的设备的）新提交，先同步再推：
+
+```bash
+git pull --rebase
+pnpm ship
+```

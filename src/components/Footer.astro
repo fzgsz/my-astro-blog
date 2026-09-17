@@ -1,18 +1,16 @@
+---
+import ContactEmail from './ContactEmail.astro';
+import { AUTHOR_NAME, AUTHOR_GITHUB, AUTHOR_GITHUB_HANDLE } from '../consts';
+---
 <footer class="site-footer">
-<p>&copy; {new Date().getFullYear()} Henry. All rights reserved.</p>
-
-  
-  <div class="footer-social">
-    <a href="https://mastodon.social/" target="_blank" rel="noopener noreferrer" aria-label="Mastodon">
-      <!-- 保留原有 Mastodon 图标代码 -->
+  <div class="footer-contact">
+    <a href={AUTHOR_GITHUB} target="_blank" rel="noopener noreferrer" class="footer-link">
+      GitHub / {AUTHOR_GITHUB_HANDLE}
     </a>
-    <a href="https://twitter.com/" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
-      <!-- 保留原有 Twitter 图标代码 -->
-    </a>
-    <a href="https://github.com/你的GitHub用户名" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
-      <!-- 保留原有 GitHub 图标代码 -->
-    </a>
+    <ContactEmail size="sm" />
   </div>
+
+  <p class="footer-copy">&copy; {new Date().getFullYear()} {AUTHOR_NAME}. All rights reserved.</p>
 </footer>
 
 <style>
@@ -23,11 +21,19 @@
   border-top: 1px solid #e5e7eb;
   margin-top: 3rem;
 }
-.footer-social {
+.footer-contact {
   display: flex;
   justify-content: center;
-  gap: 1.5rem;
-  margin-top: 1rem;
-  font-size: 1.25rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-bottom: 1rem;
+}
+.footer-link {
+  font-size: 0.95rem;
+}
+.footer-copy {
+  font-size: 0.9rem;
+  margin: 0;
 }
 </style>

@@ -1,100 +1,337 @@
 ---
-import Header from '../components/Header.astro';
+import BaseHead from '../components/BaseHead.astro';
+import ContactEmail from '../components/ContactEmail.astro';
 import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import PostCard from '../components/PostCard.astro';
+import { SITE_DESCRIPTION, AUTHOR_NAME, AUTHOR_GITHUB } from '../consts';
 import { getCollection } from 'astro:content';
-// 获取所有博客文章，按 pubDate 发布日期倒序（最新放上面）
-const posts = (await getCollection('blog')).sort((a, b) => {
-  const dateA = a.data.pubDate ? new Date(a.data.pubDate) : new Date(0);
-  const dateB = b.data.pubDate ? new Date(b.data.pubDate) : new Date(0);
-  return dateB.valueOf() - dateA.valueOf();
-});
+
+// 全部文章，按发布日期倒序（最新在上面）
+const posts = (await getCollection('blog')).sort(
+	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
+
+// 精选：frontmatter 里 featured: true
+const featuredPosts = posts.filter((post) => post.data.featured);
+
+// 标签统计（按出现次数从多到少）
+const tagCount = new Map();
+for (const post of posts) {
+	for (const tag of post.data.tags ?? []) {
+		tagCount.set(tag, (tagCount.get(tag) ?? 0) + 1);
+	}
+}
+const tags = [...tagCount.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+const lastUpdated = posts[0]?.data.pubDate;
+
+const formatDate = (date) =>
+	new Date(date).toLocaleDateString('zh-CN', {
+		year: 'numeric',
+		month: 'long',
+		day: 'numeric',
+	});
 ---
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width" />
-  <title>赵恒辉的个人博客</title>
+  <BaseHead title={`${AUTHOR_NAME}的个人博客`} description={SITE_DESCRIPTION} />
 </head>
 <body>
   <Header />
   <main class="home-container">
-    <section class="hero-section">
+
+    <!-- 顶部 -->
+    <section class="hero">
       <h1>你好，同志</h1>
-      <p class="hero-subtitle">欢迎来到赵恒辉的个人博客</p>
-      
+      <p class="hero-subtitle">欢迎来到{AUTHOR_NAME}的个人博客</p>
+
       <div class="social-links">
-        <a href="https://github.com/fzgsz" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <a href="mailto:2990710440@qq.com">Email</a>
+        <a href={AUTHOR_GITHUB} target="_blank" rel="noopener noreferrer">GitHub</a>
+        <ContactEmail />
+      </div>
+
+      <div class="stats">
+        <span><b>{posts.length}</b> 篇文章</span>
+        <span class="sep">·</span>
+        <span><b>{tags.length}</b> 个标签</span>
+        {
+          lastUpdated && (
+            <>
+              <span class="sep">·</span>
+              <span>最近更新 {formatDate(lastUpdated)}</span>
+            </>
+          )
+        }
       </div>
     </section>
-    <section class="posts-section">
-      <h2>📝 最新文章</h2>
-      
-      {posts.length === 0 ? (
-        <p class="empty-tip">文章持续整理更新中，后续将在这里发布技术笔记、学习心得与思考总结。</p>
-      ) : (
-        <ul class="post-list">
-          {posts.map(post => (
-            <li class="post-item">
-              <a href={`/blog/${post.slug}`}>{post.data.title}</a>
-             <time>{post.data.pubDate ? new Date(post.data.pubDate).toLocaleDateString('zh-CN') : '无日期'}</time>
-            </li>
-          ))}
-        </ul>
-      )}
+
+    <!-- 关于我 -->
+    <section class="about-card">
+      <span class="avatar" aria-hidden="true">{AUTHOR_NAME.slice(0, 1)}</span>
+      <div class="about-text">
+        <h2>关于我</h2>
+        <p>在这里记录学习笔记、踩过的坑和零散思考。内容持续更新，欢迎交流。</p>
+      </div>
+      <a class="about-btn" href="/about">了解更多 →</a>
     </section>
+
+    <!-- 精选 -->
+    {
+      featuredPosts.length > 0 && (
+        <section class="section">
+          <h2 class="section-title">⭐ 精选</h2>
+          <div class="featured-list">
+            {featuredPosts.map((post) => (
+              <PostCard post={post} featured maxLength={110} />
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    <!-- 最新文章 -->
+    <section class="section">
+      <h2 class="section-title">📝 最新文章</h2>
+
+      {
+        tags.length > 0 && posts.length > 0 && (
+          <div class="tag-filter" role="group" aria-label="按标签筛选文章">
+            <button type="button" class="tag-btn is-active" data-filter="*">
+              全部 {posts.length}
+            </button>
+            {tags.map(([tag, count]) => (
+              <button type="button" class="tag-btn" data-filter={tag}>
+                {tag} {count}
+              </button>
+            ))}
+          </div>
+        )
+      }
+
+      {
+        posts.length === 0 ? (
+          <p class="empty-tip">文章持续整理更新中，后续将在这里发布技术笔记、学习心得与思考总结。</p>
+        ) : (
+          <div class="card-list" id="post-list">
+            {posts.map((post) => (
+              <PostCard post={post} />
+            ))}
+          </div>
+        )
+      }
+
+      <p class="empty-tip filter-empty" id="filter-empty" hidden>这个标签下还没有文章。</p>
+    </section>
+
   </main>
   <Footer />
+
+  <script>
+    // 标签筛选：纯前端显隐，不刷新页面
+    const buttons = document.querySelectorAll('.tag-btn');
+    const cards = document.querySelectorAll('#post-list .post-card');
+    const emptyTip = document.getElementById('filter-empty');
+
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const filter = btn.getAttribute('data-filter') || '*';
+
+        buttons.forEach((b) => b.classList.toggle('is-active', b === btn));
+
+        let visible = 0;
+        cards.forEach((card) => {
+          const cardTags = (card.getAttribute('data-tags') || '').split(',').filter(Boolean);
+          const show = filter === '*' || cardTags.includes(filter);
+          card.toggleAttribute('hidden', !show);
+          if (show) visible += 1;
+        });
+
+        if (emptyTip) emptyTip.toggleAttribute('hidden', visible > 0);
+      });
+    });
+  </script>
 </body>
 </html>
+
 <style>
 .home-container {
+  width: auto;              /* 覆盖 global.css 的 main{width:720px} */
   max-width: 72rem;
   margin: 0 auto;
-  padding: 3rem 1rem;
+  padding: 3rem 1rem 0;
   text-align: center;
 }
-.hero-section h1 {
+
+/* ── 顶部 ── */
+.hero h1 {
   font-size: 3.5rem;
-  margin-bottom: 0.5rem;
+  margin: 0 0 0.5rem;
 }
 .hero-subtitle {
   font-size: 1.25rem;
   color: #4b5563;
+  margin: 0;
 }
 .social-links {
   display: flex;
   gap: 1.25rem;
   justify-content: center;
-  margin: 1rem 0;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 1.25rem 0 0.75rem;
 }
 .social-links a {
   color: #2563eb;
-  font-size:1.1rem;
+  font-size: 1.1rem;
 }
-.posts-section {
-  margin-top:4rem;
+.stats {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  color: #6b7280;
 }
-.posts-section h2 {
-  font-size:2rem;
+.stats b {
+  color: #1f2937;
+  font-weight: 600;
+}
+.stats .sep {
+  color: #d1d5db;
+}
+
+/* ── 关于我卡片 ── */
+.about-card {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  text-align: left;
+  max-width: 46rem;
+  margin: 2.5rem auto 0;
+  padding: 1.1rem 1.25rem;
+  background: linear-gradient(135deg, #f8faff, #f1f5ff);
+  border: 1px solid #e3e9ff;
+  border-radius: 16px;
+}
+.avatar {
+  flex: 0 0 56px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+.about-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.about-text h2 {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+  color: #1f2937;
+}
+.about-text p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #6b7280;
+}
+.about-btn {
+  flex: 0 0 auto;
+  font-size: 0.88rem;
+  color: #2563eb;
+  white-space: nowrap;
+}
+
+/* ── 区块通用 ── */
+.section {
+  margin-top: 3.5rem;
+  text-align: left;
+}
+.section-title {
+  font-size: 1.6rem;
+  margin: 0 0 1.25rem;
+  text-align: center;
+}
+
+/* ── 标签筛选 ── */
+.tag-filter {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+.tag-btn {
+  font-family: inherit;
+  font-size: 0.83rem;
+  padding: 0.28rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #4b5563;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.tag-btn:hover {
+  border-color: #c7d2fe;
+  color: #2563eb;
+}
+.tag-btn.is-active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+/* ── 卡片列表 ── */
+.card-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+}
+.featured-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.25rem;
+  align-items: stretch;
 }
 .empty-tip {
   color: #6b7280;
-  margin-top: 0.5rem;
+  font-size: 0.92rem;
+  text-align: center;
 }
-.post-list {
-  list-style: none;
-  padding: 0;
-  max-width:600px;
-  margin: 0 auto;
+.filter-empty {
+  margin-top: 1.5rem;
 }
-.post-item {
-  margin: 0.75rem 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding:0.5rem;
-  border-bottom:1px solid #eee;
+
+@media (max-width: 640px) {
+  .hero h1 {
+    font-size: 2.4rem;
+  }
+  .hero-subtitle {
+    font-size: 1.05rem;
+  }
+  .about-card {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    gap: 0.75rem;
+  }
+  .about-btn {
+    align-self: flex-end;
+  }
+  .card-list {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

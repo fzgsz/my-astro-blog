@@ -9,11 +9,16 @@ const blog = defineCollection({
 	schema: ({ image }) =>
 		z.object({
 			title: z.string(),
-			description: z.string(),
+			// 描述可以留空：留空时详情页的 SEO 描述会退回用标题
+			description: z.string().optional(),
 			// Transform string to Date object
 			pubDate: z.coerce.date(),
 			updatedDate: z.coerce.date().optional(),
 			heroImage: z.optional(image()),
+			// 标签：用于分类展示与筛选
+			tags: z.array(z.string()).default([]),
+			// 标记为精选，用于首页单独推荐
+			featured: z.boolean().default(false),
 		}),
 });
 

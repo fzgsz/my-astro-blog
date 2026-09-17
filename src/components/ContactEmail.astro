@@ -1,0 +1,117 @@
+---
+/**
+ * 联系邮箱展示组件
+ * 邮箱明文显示（访客一眼可见），附一键复制按钮。
+ * 复制失败时提供降级路径，即使 JS 完全失效，明文也可手动选中复制。
+ */
+import { AUTHOR_EMAIL, QQ_MAIL_URL } from '../consts';
+
+interface Props {
+  /** 是否显示「复制」按钮 */
+  showCopy?: boolean;
+  /** 尺寸：md 用于首页，sm 用于页脚 */
+  size?: 'sm' | 'md';
+}
+
+const { showCopy = true, size = 'md' } = Astro.props;
+---
+
+<span class={`email-wrap email-wrap--${size}`}>
+  <a
+    href={QQ_MAIL_URL}
+    target="_blank"
+    rel="noopener noreferrer"
+    class="email-text"
+    title="点击打开 QQ 邮箱">{AUTHOR_EMAIL}</a>
+  {showCopy && (
+    <button
+      type="button"
+      class="copy-btn"
+      data-email={AUTHOR_EMAIL}
+      title="复制邮箱地址">复制</button>
+  )}
+</span>
+
+<style>
+  .email-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+  /* 允许选中，保证 JS 不可用时仍能手动复制 */
+  .email-text {
+    color: #2563eb;
+    user-select: text;
+  }
+  .email-wrap--md .email-text {
+    font-size: 1.1rem;
+  }
+  .email-wrap--sm .email-text {
+    font-size: 0.95rem;
+  }
+  .copy-btn {
+    background: none;
+    border: 1px solid #c7d2fe;
+    border-radius: 999px;
+    padding: 0.05rem 0.6rem;
+    font-family: inherit;
+    font-size: 0.8rem;
+    line-height: 1.7;
+    color: #4b5563;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .copy-btn:hover {
+    background: #eef2ff;
+    color: #2563eb;
+  }
+  .copy-btn.copied {
+    color: #16a34a;
+    border-color: #86efac;
+    background: #f0fdf4;
+  }
+</style>
+
+<script>
+  // 同一页面可能出现多个实例（如首页 + 页脚），统一绑定
+  document.querySelectorAll('.copy-btn').forEach((btn) => {
+    if (btn.dataset.copyBound === '1') return;
+    btn.dataset.copyBound = '1';
+
+    btn.addEventListener('click', async () => {
+      const email = btn.getAttribute('data-email') || '';
+      const original = btn.textContent;
+      let ok = false;
+
+      // 首选：Clipboard API（需要安全上下文）
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(email);
+          ok = true;
+        }
+      } catch (e) {
+        ok = false;
+      }
+
+      // 降级：临时 textarea + execCommand
+      if (!ok) {
+        const ta = document.createElement('textarea');
+        ta.value = email;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.top = '-1000px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+        ta.remove();
+      }
+
+      btn.textContent = ok ? '已复制 ✓' : '请手动复制';
+      btn.classList.toggle('copied', ok);
+      setTimeout(() => {
+        btn.textContent = original;
+        btn.classList.remove('copied');
+      }, 1600);
+    });
+  });
+</script>

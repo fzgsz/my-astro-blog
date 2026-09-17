@@ -9,13 +9,15 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "new": "node scripts/new-post.mjs",
+    "ship": "node scripts/ship.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^8.0.0",
     "@astrojs/rss": "^4.0.19",
     "@astrojs/sitemap": "^3.7.4",
-    "astro": "^7.3.1",
+    "astro": "^7.3.2",
     "sharp": "^0.35.0"
   },
   "allowScripts": {
