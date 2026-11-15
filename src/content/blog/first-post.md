@@ -4,6 +4,7 @@ description: "测试文章"
 pubDate: 2026-09-08
 tags: ["学习笔记"]
 featured: false
+draft: true
 ---
 # 标题
 这里写正文，支持所有markdown语法。
