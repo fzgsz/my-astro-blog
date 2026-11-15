@@ -77,12 +77,22 @@ function handleSave(req, res) {
       }
 
       const exists = fs.existsSync(file);
+      const existing = exists
+        ? parseFrontmatter(fs.readFileSync(file, 'utf8'))
+        : { data: {} };
+
+      // 保留写作台不管理的字段：heroImage、featured、updatedDate 等
+      const managed = ['title', 'description', 'pubDate', 'tags', 'draft'];
+      const extraLines = Object.keys(existing.data)
+        .filter((key) => !managed.includes(key))
+        .map((key) => `${key}: ${existing.data[key]}`);
 
       const frontmatter = [
         '---',
         `title: "${escapeYaml(title)}"`,
         `description: "${escapeYaml(description)}"`,
-        `pubDate: ${localDate()}`,
+        `pubDate: ${existing.data.pubDate || localDate()}`,
+        ...extraLines,
         `tags: [${tagList.map((t) => `"${escapeYaml(t)}"`).join(', ')}]`,
         `draft: ${payload.draft === true}`,
         '---',
@@ -159,6 +169,89 @@ function handleUpload(req, res) {
   });
 }
 
+function parseFrontmatter(text) {
+  const match = String(text).match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+  if (!match) return { data: {}, content: text };
+  const data = {};
+  match[1].split(/\r?\n/).forEach((line) => {
+    const pair = line.match(/^([A-Za-z0-9_]+):\s*(.*)$/);
+    if (!pair) return;
+    let value = pair[2].trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1).replace(/\\"/g, '"');
+    }
+    data[pair[1]] = value;
+  });
+  return { data, content: text.slice(match[0].length) };
+}
+
+function readPost(slug) {
+  const dir = path.resolve(process.cwd(), 'src', 'content', 'blog');
+  const safe = toSlug(slug);
+  if (!safe) return null;
+  const file = path.join(dir, `${safe}.md`);
+  if (!file.startsWith(dir + path.sep) || !fs.existsSync(file)) return null;
+  const { data, content } = parseFrontmatter(fs.readFileSync(file, 'utf8'));
+  let tags = [];
+  try {
+    tags = JSON.parse(data.tags || '[]');
+  } catch {
+    tags = [];
+  }
+  return {
+    slug: safe,
+    title: data.title || safe,
+    description: data.description || '',
+    pubDate: data.pubDate || '',
+    tags: Array.isArray(tags) ? tags : [],
+    draft: data.draft === 'true',
+    content: content.replace(/^\n+/, ''),
+  };
+}
+
+function handleList(req, res) {
+  const send = (code, obj) => {
+    res.statusCode = code;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.end(JSON.stringify(obj));
+  };
+  if (req.method !== 'GET') return send(405, { ok: false, error: '只接受 GET 请求' });
+
+  try {
+    const dir = path.resolve(process.cwd(), 'src', 'content', 'blog');
+    const posts = fs
+      .readdirSync(dir)
+      .filter((name) => name.endsWith('.md'))
+      .map((name) => readPost(name.replace(/\.md$/, '')))
+      .filter(Boolean)
+      .sort((a, b) => String(b.pubDate).localeCompare(String(a.pubDate)));
+    send(200, { ok: true, posts });
+  } catch (err) {
+    send(400, { ok: false, error: err.message || String(err) });
+  }
+}
+
+function handleRead(req, res) {
+  const send = (code, obj) => {
+    res.statusCode = code;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.end(JSON.stringify(obj));
+  };
+  if (req.method !== 'GET') return send(405, { ok: false, error: '只接受 GET 请求' });
+
+  try {
+    const url = new URL(req.url, 'http://localhost');
+    const post = readPost(url.searchParams.get('slug') || '');
+    if (!post) return send(404, { ok: false, error: '文章不存在' });
+    send(200, { ok: true, ...post });
+  } catch (err) {
+    send(400, { ok: false, error: err.message || String(err) });
+  }
+}
+
 export default function writerPlugin() {
   return {
     name: 'local-writer',
@@ -173,6 +266,8 @@ export default function writerPlugin() {
                 configureServer(server) {
                   server.middlewares.use('/__writer/save', handleSave);
                   server.middlewares.use('/__writer/upload', handleUpload);
+                  server.middlewares.use('/__writer/posts', handleList);
+                  server.middlewares.use('/__writer/post', handleRead);
                 },
               },
             ],

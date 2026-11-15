@@ -96,7 +96,9 @@ pnpm dev
 | 右边 | 实时显示文章最终长什么样 |
 | 草稿开关 | 勾选「草稿」后保存，文章不会上线；取消勾选再保存即可发布 |
 | 自动保存 | 输入时每 800ms 暂存到浏览器 localStorage，刷新或误关后可恢复 |
-| 图片粘贴 | 在正文里 Ctrl+V 粘贴截图，自动上传到 `public/uploads/` 并插入 Markdown |
+| 图片粘贴 | 在正文里 Ctrl+V 粘贴截图（或把图片拖进编辑区），自动上传到 `public/uploads/` 并插入 Markdown |
+| 最近文章 | 展开「最近文章」可以点开旧文继续编辑，保存时覆盖原文件 |
+| 保留字段 | 编辑旧文时会保留 `heroImage`、`featured`、`updatedDate`，不会被写作台覆盖掉 |
 | 底部「保存」 | 点一下（或按 `Ctrl+S`），文件自动存进 `src/content/blog/`；保存后可一键复制 `pnpm ship` 命令 |
 
 存完再跑 `pnpm ship` 就发布上线了。
@@ -141,6 +143,7 @@ featured: false
 | --- | --- | --- |
 | `pnpm new` | 新建一篇文章 | 每次想写新东西 |
 | `pnpm dev` | 本地预览，支持热更新 | 写作时一直开着 |
+| `pnpm write` | 启动开发服务器并直接打开 `/admin` 写作台 | 想写文章时 |
 | `pnpm ship` | 构建 + 提交 + 推送上线 | 写完了要发出去 |
 | `pnpm build` | 只做构建检查 | 想确认有没有写错，但不发布 |
 | `pnpm preview` | 预览构建后的成品 | 检查上线后的真实效果 |

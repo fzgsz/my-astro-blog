@@ -27,6 +27,11 @@ const isDev = import.meta.env.DEV;
           <span class="badge">仅本地可用</span>
         </header>
 
+        <details class="recent" id="recent-panel">
+          <summary>最近文章 <span id="recent-count"></span></summary>
+          <ul id="recent-list"><li class="recent-empty">加载中…</li></ul>
+        </details>
+
         <section class="meta">
           <label class="field field--title">
             <span>标题</span>
@@ -105,6 +110,9 @@ const isDev = import.meta.env.DEV;
     const draftEl = $('f-draft');
     const counterEl = $('counter');
     const copyBtn = $('btn-copy');
+    const recentList = $('recent-list');
+    const recentCount = $('recent-count');
+    let editingSlug = '';
 
     // 元素不存在说明当前不是本地环境，直接跳过全部逻辑
     if (editor && preview && saveBtn) {
@@ -268,6 +276,8 @@ const isDev = import.meta.env.DEV;
               (draftEl && draftEl.checked ? '（草稿，不会上线）' : '　→　跑 pnpm ship 发布上线'),
             'ok',
           );
+          editingSlug = data.slug;
+          loadRecent();
         } catch (err) {
           setStatus(`保存失败：${err.message}`, 'error');
         } finally {
@@ -385,6 +395,24 @@ const isDev = import.meta.env.DEV;
         }
       });
 
+      ['dragover', 'dragenter'].forEach((eventName) => {
+        editor.addEventListener(eventName, (event) => event.preventDefault());
+      });
+      editor.addEventListener('drop', async (event) => {
+        event.preventDefault();
+        const files = Array.from(event.dataTransfer?.files || []).filter((file) =>
+          file.type.startsWith('image/'),
+        );
+        for (const file of files) {
+          try {
+            const url = await uploadImage(file);
+            insertAtCursor(`\n![图片](${url})\n`);
+          } catch (err) {
+            setStatus(`图片上传失败：${err.message}`, 'error');
+          }
+        }
+      });
+
       editor.addEventListener('input', () => {
         updateCounter();
         scheduleSave();
@@ -403,9 +431,80 @@ const isDev = import.meta.env.DEV;
         });
       }
 
+      /* ── 最近文章 / 载入旧文 ── */
+      function renderRecent(posts) {
+        if (!recentList) return;
+        recentList.innerHTML = '';
+        if (recentCount) recentCount.textContent = `（${posts.length}）`;
+        if (!posts.length) {
+          const empty = document.createElement('li');
+          empty.className = 'recent-empty';
+          empty.textContent = '还没有文章';
+          recentList.appendChild(empty);
+          return;
+        }
+        posts.forEach((post) => {
+          const item = document.createElement('li');
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'recent-item';
+
+          const title = document.createElement('span');
+          title.className = 'recent-title';
+          title.textContent = post.title || post.slug;
+
+          const meta = document.createElement('span');
+          meta.className = 'recent-meta';
+          meta.textContent = `${post.pubDate || ''}${post.draft ? ' · 草稿' : ''}`;
+
+          button.append(title, meta);
+          button.addEventListener('click', () => loadPost(post.slug));
+          item.appendChild(button);
+          recentList.appendChild(item);
+        });
+      }
+
+      async function loadRecent() {
+        if (!recentList) return;
+        try {
+          const res = await fetch('/__writer/posts');
+          const data = await res.json();
+          if (!data.ok) throw new Error(data.error || '读取失败');
+          renderRecent(data.posts || []);
+        } catch (err) {
+          recentList.innerHTML = '';
+          const empty = document.createElement('li');
+          empty.className = 'recent-empty';
+          empty.textContent = `读取失败：${err.message}`;
+          recentList.appendChild(empty);
+        }
+      }
+
+      async function loadPost(slug) {
+        try {
+          const res = await fetch(`/__writer/post?slug=${encodeURIComponent(slug)}`);
+          const data = await res.json();
+          if (!data.ok) throw new Error(data.error || '读取失败');
+          editingSlug = data.slug;
+          titleEl.value = data.title || '';
+          descEl.value = data.description || '';
+          tagsEl.value = (data.tags || []).join(', ');
+          slugEl.value = data.slug;
+          if (draftEl) draftEl.checked = !!data.draft;
+          editor.value = data.content || '';
+          updatePreview();
+          updateCounter();
+          setStatus(`正在编辑：${data.slug}（保存会覆盖原文件）`, 'ok');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (err) {
+          setStatus(`载入失败：${err.message}`, 'error');
+        }
+      }
+
       updateCounter();
       updatePreview();
       restoreDraft();
+      loadRecent();
     }
   </script>
 
@@ -676,6 +775,61 @@ const isDev = import.meta.env.DEV;
       background: #f1f5f9;
       padding: 0.1rem 0.35rem;
       border-radius: 4px;
+    }
+
+    .recent {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 0.5rem 0.75rem;
+      margin-bottom: 0.9rem;
+      background: #fbfbfd;
+    }
+    .recent summary {
+      cursor: pointer;
+      font-size: 0.88rem;
+      color: #374151;
+      user-select: none;
+    }
+    .recent ul {
+      list-style: none;
+      margin: 0.6rem 0 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 0.35rem;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+    .recent-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.1rem;
+      width: 100%;
+      text-align: left;
+      padding: 0.4rem 0.55rem;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      cursor: pointer;
+      font: inherit;
+    }
+    .recent-item:hover {
+      background: #eef2ff;
+      border-color: #dbe3ff;
+    }
+    .recent-title {
+      font-size: 0.85rem;
+      color: #1f2937;
+    }
+    .recent-meta {
+      font-size: 0.72rem;
+      color: #9ca3af;
+    }
+    .recent-empty {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      padding: 0.3rem;
     }
 
     @media (max-width: 860px) {
