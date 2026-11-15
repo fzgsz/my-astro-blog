@@ -36,7 +36,7 @@ const tags = [...tagCount.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCo
 			}
 			.page-head p {
 				margin: 0 0 1.5rem;
-				color: #6b7280;
+				color: var(--muted);
 				font-size: 0.95rem;
 			}
 			.tag-cloud {
@@ -47,9 +47,9 @@ const tags = [...tagCount.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCo
 			}
 			.tag-cloud a {
 				font-size: 0.82rem;
-				color: #4b5563;
-				background: #fff;
-				border: 1px solid #e5e7eb;
+				color: var(--muted);
+				background: var(--surface);
+				border: 1px solid var(--border);
 				border-radius: 999px;
 				padding: 0.25rem 0.8rem;
 				text-decoration: none;
@@ -57,10 +57,10 @@ const tags = [...tagCount.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCo
 			}
 			.tag-cloud a:hover {
 				color: var(--accent);
-				border-color: #c7d2fe;
+				border-color: var(--chip-border);
 			}
 			.tag-cloud span {
-				color: #9ca3af;
+				color: var(--muted);
 				margin-left: 0.35rem;
 				font-size: 0.75rem;
 			}
@@ -70,7 +70,7 @@ const tags = [...tagCount.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCo
 				gap: 1rem;
 			}
 			.empty-tip {
-				color: #6b7280;
+				color: var(--muted);
 				text-align: center;
 				padding: 3rem 0;
 			}

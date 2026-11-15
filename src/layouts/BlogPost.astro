@@ -50,7 +50,7 @@ const {
 				display: block;
 				margin: 0 auto;
 				border-radius: 16px;
-				box-shadow: 0 12px 40px rgba(31, 35, 40, 0.08);
+				box-shadow: 0 12px 40px var(--shadow);
 			}
 			.prose {
 				width: 700px;
@@ -91,14 +91,14 @@ const {
 			.post-tags a {
 				font-size: 0.76rem;
 				color: var(--accent);
-				background: #eef4f8;
-				border: 1px solid #d7e3ec;
+				background: var(--chip-bg);
+				border: 1px solid var(--chip-border);
 				border-radius: 999px;
 				padding: 0.15rem 0.65rem;
 				text-decoration: none;
 			}
 			.post-tags a:hover {
-				background: #e2edf5;
+				background: var(--accent-soft);
 			}
 			hr {
 				margin: 1.6em 0 0;

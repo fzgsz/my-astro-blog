@@ -40,7 +40,7 @@ const { showCopy = true, size = 'md' } = Astro.props;
   }
   /* 允许选中，保证 JS 不可用时仍能手动复制 */
   .email-text {
-    color: #2563eb;
+    color: var(--accent);
     user-select: text;
   }
   .email-wrap--md .email-text {
@@ -51,24 +51,24 @@ const { showCopy = true, size = 'md' } = Astro.props;
   }
   .copy-btn {
     background: none;
-    border: 1px solid #c7d2fe;
+    border: 1px solid var(--chip-border);
     border-radius: 999px;
     padding: 0.05rem 0.6rem;
     font-family: inherit;
     font-size: 0.8rem;
     line-height: 1.7;
-    color: #4b5563;
+    color: var(--muted);
     cursor: pointer;
     white-space: nowrap;
   }
   .copy-btn:hover {
-    background: #eef2ff;
-    color: #2563eb;
+    background: var(--accent-soft);
+    color: var(--accent);
   }
   .copy-btn.copied {
-    color: #16a34a;
-    border-color: #86efac;
-    background: #f0fdf4;
+    color: var(--success);
+    border-color: var(--success-border);
+    background: var(--success-bg);
   }
 </style>
 

@@ -196,11 +196,11 @@ const formatDate = (date) =>
   color: var(--muted);
 }
 .stats b {
-  color: #1f2937;
+  color: var(--text);
   font-weight: 600;
 }
 .stats .sep {
-  color: #d1d5db;
+  color: var(--border);
 }
 
 /* ── 关于我卡片 ── */
@@ -212,7 +212,7 @@ const formatDate = (date) =>
   max-width: 46rem;
   margin: 2.5rem auto 0;
   padding: 1.1rem 1.25rem;
-  background: linear-gradient(135deg, #ffffff, #f5f1e8);
+  background: linear-gradient(135deg, var(--surface), var(--accent-soft));
   border: 1px solid var(--border);
   border-radius: 16px;
 }
@@ -237,13 +237,13 @@ const formatDate = (date) =>
 .about-text h2 {
   margin: 0 0 0.2rem;
   font-size: 1rem;
-  color: #1f2937;
+  color: var(--text);
 }
 .about-text p {
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.6;
-  color: #6b7280;
+  color: var(--muted);
 }
 .about-btn {
   flex: 0 0 auto;
@@ -276,20 +276,20 @@ const formatDate = (date) =>
   font-size: 0.83rem;
   padding: 0.28rem 0.85rem;
   border-radius: 999px;
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  color: #4b5563;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 .tag-btn:hover {
-  border-color: #c7d2fe;
+  border-color: var(--chip-border);
   color: var(--accent);
 }
 .tag-btn.is-active {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--bg);
 }
 
 /* ── 卡片列表 ── */
@@ -306,7 +306,7 @@ const formatDate = (date) =>
   align-items: stretch;
 }
 .empty-tip {
-  color: #6b7280;
+  color: var(--muted);
   font-size: 0.92rem;
   text-align: center;
 }

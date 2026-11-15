@@ -12,12 +12,53 @@ html:root {
 	--border: #e6e2d8;
 	--accent: #2f5d8a;
 	--accent-dark: #1f3f5e;
+	--accent-soft: #eef4f8;
+	--chip-bg: #eef4f8;
+	--chip-border: #d7e3ec;
+	--quote-bg: #f6f3ec;
+	--code-bg: #f1eee6;
+	--table-head: #f8f5ee;
+	--selection: #dbeafe;
+	--shadow: rgba(31, 35, 40, 0.08);
+	--header-shadow: rgba(15, 23, 42, 0.06);
+	--card-shadow: rgba(37, 99, 235, 0.1);
+	--success: #15803d;
+	--success-bg: #f0fdf4;
+	--success-border: #86efac;
 	--radius: 12px;
 	--content: 700px;
 }
 
+html[data-theme='dark'] {
+	color-scheme: dark;
+	--bg: #0b1017;
+	--surface: #131b25;
+	--text: #e6e9ef;
+	--muted: #9aa6b6;
+	--border: #28323f;
+	--accent: #8ab4e8;
+	--accent-dark: #b9d5f2;
+	--accent-soft: #1a2634;
+	--chip-bg: #1a2634;
+	--chip-border: #2f4055;
+	--quote-bg: #151d27;
+	--code-bg: #1b2532;
+	--table-head: #1a2431;
+	--selection: #243b55;
+	--shadow: rgba(0, 0, 0, 0.45);
+	--header-shadow: rgba(0, 0, 0, 0.35);
+	--card-shadow: rgba(0, 0, 0, 0.45);
+	--success: #4ade80;
+	--success-bg: #0f2418;
+	--success-border: #2f6b45;
+	--black: 230, 233, 239;
+	--gray-dark: 230, 233, 239;
+	--gray-light: 40, 50, 63;
+}
+
 html {
 	scroll-behavior: smooth;
+	background: var(--bg);
 }
 
 body {
@@ -62,7 +103,7 @@ a {
 }
 
 ::selection {
-	background: #dbeafe;
+	background: var(--selection);
 }
 
 /* 正文里的标题留出滚动偏移，点目录时不被顶部挡住 */
@@ -75,18 +116,22 @@ a {
 	margin-bottom: 1.5em;
 }
 
+code {
+	background: var(--code-bg);
+}
+
 .prose blockquote {
 	font-size: 1.02em;
 	color: var(--muted);
 	border-left-color: var(--accent);
-	background: #f6f3ec;
+	background: var(--quote-bg);
 	padding: 0.85em 1.1em;
 	border-radius: 0 8px 8px 0;
 }
 
 .prose code {
 	font-size: 0.86em;
-	background: #f1eee6;
+	background: var(--code-bg);
 	border-radius: 4px;
 }
 
@@ -123,7 +168,7 @@ a {
 }
 
 .prose thead th {
-	background: #f8f5ee;
+	background: var(--table-head);
 	white-space: nowrap;
 }
 

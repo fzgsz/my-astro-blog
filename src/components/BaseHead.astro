@@ -33,6 +33,23 @@ const ogImage = new URL(image.src, Astro.url);
 <!-- Global Metadata -->
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" id="theme-color" content="#fbfaf7" />
+<script is:inline>
+	(() => {
+		try {
+			const saved = localStorage.getItem('theme');
+			const theme =
+				saved === 'light' || saved === 'dark'
+					? saved
+					: window.matchMedia('(prefers-color-scheme: dark)').matches
+						? 'dark'
+						: 'light';
+			document.documentElement.dataset.theme = theme;
+		} catch {
+			document.documentElement.dataset.theme = 'light';
+		}
+	})();
+</script>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <link rel="icon" href="/favicon.ico" />
 <link rel="sitemap" href="/sitemap-index.xml" />
@@ -44,7 +61,6 @@ const ogImage = new URL(image.src, Astro.url);
 />
 <meta name="generator" content={Astro.generator} />
 <meta name="author" content={AUTHOR_NAME} />
-<meta name="theme-color" content="#ffffff" />
 <!-- Canonical URL -->
 <link rel="canonical" href={canonicalURL} />
 <!-- Primary Meta Tags -->
