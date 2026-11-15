@@ -8,9 +8,9 @@ import { SITE_DESCRIPTION, AUTHOR_NAME, AUTHOR_GITHUB } from '../consts';
 import { getCollection } from 'astro:content';
 
 // 全部文章，按发布日期倒序（最新在上面）
-const posts = (await getCollection('blog')).sort(
-	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
-);
+const posts = (await getCollection('blog'))
+	.filter((post) => !post.data.draft)
+	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 
 // 精选：frontmatter 里 featured: true
 const featuredPosts = posts.filter((post) => post.data.featured);
@@ -166,12 +166,12 @@ const formatDate = (date) =>
 
 /* ── 顶部 ── */
 .hero h1 {
-  font-size: 3.5rem;
+  font-size: clamp(2.3rem, 5vw, 3.3rem);
   margin: 0 0 0.5rem;
 }
 .hero-subtitle {
   font-size: 1.25rem;
-  color: #4b5563;
+  color: var(--muted);
   margin: 0;
 }
 .social-links {
@@ -183,7 +183,7 @@ const formatDate = (date) =>
   margin: 1.25rem 0 0.75rem;
 }
 .social-links a {
-  color: #2563eb;
+  color: var(--accent);
   font-size: 1.1rem;
 }
 .stats {
@@ -193,7 +193,7 @@ const formatDate = (date) =>
   flex-wrap: wrap;
   gap: 0.5rem;
   font-size: 0.88rem;
-  color: #6b7280;
+  color: var(--muted);
 }
 .stats b {
   color: #1f2937;
@@ -212,8 +212,8 @@ const formatDate = (date) =>
   max-width: 46rem;
   margin: 2.5rem auto 0;
   padding: 1.1rem 1.25rem;
-  background: linear-gradient(135deg, #f8faff, #f1f5ff);
-  border: 1px solid #e3e9ff;
+  background: linear-gradient(135deg, #ffffff, #f5f1e8);
+  border: 1px solid var(--border);
   border-radius: 16px;
 }
 .avatar {
@@ -248,7 +248,7 @@ const formatDate = (date) =>
 .about-btn {
   flex: 0 0 auto;
   font-size: 0.88rem;
-  color: #2563eb;
+  color: var(--accent);
   white-space: nowrap;
 }
 
@@ -284,11 +284,11 @@ const formatDate = (date) =>
 }
 .tag-btn:hover {
   border-color: #c7d2fe;
-  color: #2563eb;
+  color: var(--accent);
 }
 .tag-btn.is-active {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: var(--accent);
+  border-color: var(--accent);
   color: #fff;
 }
 

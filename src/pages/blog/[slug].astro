@@ -4,16 +4,25 @@ import BlogPost from '../../layouts/BlogPost.astro';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
-  return posts.map((post) => ({
-    params: { slug: post.id },
-    props: { post },
-  }));
+  return posts
+    // 开发环境可以打开草稿预览，构建时草稿不生成页面
+    .filter((post) => import.meta.env.DEV || !post.data.draft)
+    .map((post) => ({
+      params: { slug: post.id },
+      props: { post },
+    }));
 }
 
 const { post } = Astro.props;
 const { Content } = await render(post);
+
+// 中文按 400 字/分钟估算，代码与英文按词计，这里做粗略折算
+const plain = String(post.body ?? '').replace(/```[\s\S]*?```/g, ' ');
+const cjk = (plain.match(/[\u4e00-\u9fa5]/g) || []).length;
+const words = (plain.replace(/[\u4e00-\u9fa5]/g, ' ').match(/[A-Za-z0-9_]+/g) || []).length;
+const readingTime = Math.max(1, Math.ceil((cjk + words) / 400));
 ---
 
-<BlogPost {...post.data}>
+<BlogPost {...post.data} readingTime={readingTime}>
   <Content />
 </BlogPost>

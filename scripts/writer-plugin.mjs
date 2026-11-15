@@ -84,6 +84,7 @@ function handleSave(req, res) {
         `description: "${escapeYaml(description)}"`,
         `pubDate: ${localDate()}`,
         `tags: [${tagList.map((t) => `"${escapeYaml(t)}"`).join(', ')}]`,
+        `draft: ${payload.draft === true}`,
         '---',
         '',
       ].join('\n');
@@ -104,6 +105,60 @@ function handleSave(req, res) {
   });
 }
 
+/**
+ * 图片上传：写作台粘贴/拖拽图片时调用。
+ * 只接受 png/jpg/gif/webp，写入 public/uploads/YYYYMM/，返回可直接引用的 URL。
+ */
+function handleUpload(req, res) {
+  const send = (code, obj) => {
+    res.statusCode = code;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.end(JSON.stringify(obj));
+  };
+
+  if (req.method !== 'POST') {
+    return send(405, { ok: false, error: '只接受 POST 请求' });
+  }
+
+  let raw = '';
+  req.on('data', (chunk) => {
+    raw += chunk;
+    if (raw.length > 10 * 1024 * 1024) {
+      send(413, { ok: false, error: '图片太大了（上限 10MB）' });
+      req.destroy();
+    }
+  });
+
+  req.on('end', () => {
+    try {
+      const payload = JSON.parse(raw || '{}');
+      const original = path.basename(String(payload.name || 'image.png'));
+      const ext = path.extname(original).toLowerCase();
+      const allowed = { '.png': '.png', '.jpg': '.jpg', '.jpeg': '.jpg', '.gif': '.gif', '.webp': '.webp' };
+      if (!allowed[ext]) throw new Error('只支持 png / jpg / gif / webp');
+
+      const buffer = Buffer.from(String(payload.data || ''), 'base64');
+      if (!buffer.length) throw new Error('图片内容为空');
+      if (buffer.length > 6 * 1024 * 1024) throw new Error('图片不能超过 6MB');
+
+      const now = new Date();
+      const ym = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const dir = path.resolve(process.cwd(), 'public', 'uploads', ym);
+      const safeName = original.replace(/[^\w.-]/g, '_').replace(/^_+/, '') || 'image.png';
+      const file = path.join(dir, `${Date.now()}-${safeName}`);
+
+      if (!file.startsWith(dir + path.sep)) throw new Error('非法文件名');
+
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(file, buffer);
+
+      send(200, { ok: true, url: `/uploads/${ym}/${path.basename(file)}` });
+    } catch (err) {
+      send(400, { ok: false, error: err.message || String(err) });
+    }
+  });
+}
+
 export default function writerPlugin() {
   return {
     name: 'local-writer',
@@ -117,6 +172,7 @@ export default function writerPlugin() {
                 // configureServer 只会在 dev server 启动时调用，构建时不会执行
                 configureServer(server) {
                   server.middlewares.use('/__writer/save', handleSave);
+                  server.middlewares.use('/__writer/upload', handleUpload);
                 },
               },
             ],

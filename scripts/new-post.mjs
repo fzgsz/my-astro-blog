@@ -76,6 +76,7 @@ title: "${title.replace(/"/g, '\\"')}"
 description: "${description.replace(/"/g, '\\"')}"
 pubDate: ${today()}
 tags: []
+draft: false
 ---
 
 在这里开始写正文，支持全部 Markdown 语法。写完把这一段删掉即可。

@@ -1,0 +1,72 @@
+---
+import { getCollection } from 'astro:content';
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import PostCard from '../../components/PostCard.astro';
+import { SITE_TITLE } from '../../consts';
+
+export async function getStaticPaths() {
+	const posts = (await getCollection('blog')).filter((post) => !post.data.draft);
+	const tags = [...new Set(posts.flatMap((post) => post.data.tags ?? []))];
+	return tags.map((tag) => ({
+		params: { tag },
+		props: { tag },
+	}));
+}
+
+const { tag } = Astro.props;
+const posts = (await getCollection('blog'))
+	.filter((post) => !post.data.draft)
+	.filter((post) => (post.data.tags ?? []).includes(tag))
+	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+---
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<BaseHead title={`标签：${tag} | ${SITE_TITLE}`} description={`标签「${tag}」下的全部文章`} />
+		<style>
+			main.tag-page {
+				width: auto;
+				max-width: 72rem;
+				margin: 0 auto;
+				padding: 2.5rem 1rem 0;
+			}
+			.crumb {
+				margin: 0 0 1rem;
+				font-size: 0.9rem;
+			}
+			h1 {
+				font-size: 2rem;
+				margin: 0 0 0.35rem;
+			}
+			.count {
+				margin: 0 0 1.75rem;
+				color: #6b7280;
+				font-size: 0.95rem;
+			}
+			.card-list {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+				gap: 1rem;
+			}
+			@media (max-width: 640px) {
+				.card-list {
+					grid-template-columns: 1fr;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main class="tag-page">
+			<p class="crumb"><a href="/blog">← 全部文章</a></p>
+			<h1>标签：{tag}</h1>
+			<p class="count">共 {posts.length} 篇</p>
+			<div class="card-list">
+				{posts.map((post) => <PostCard post={post} />)}
+			</div>
+		</main>
+		<Footer />
+	</body>
+</html>

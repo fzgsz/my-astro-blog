@@ -68,8 +68,8 @@ const dateText = new Date(post.data.pubDate).toLocaleDateString('zh-CN', {
     align-items: stretch;
     text-decoration: none;
     color: inherit;
-    background: #fff;
-    border: 1px solid #e8eaef;
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 14px;
     padding: 0.85rem;
     height: 100%;
@@ -119,13 +119,13 @@ const dateText = new Date(post.data.pubDate).toLocaleDateString('zh-CN', {
     color: #1f2937;
   }
   .card-link:hover .card-title {
-    color: #2563eb;
+    color: var(--accent);
   }
   .card-summary {
     margin: 0;
     font-size: 0.88rem;
     line-height: 1.55;
-    color: #6b7280;
+    color: var(--muted);
     /* 最多两行，超出省略 */
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -140,11 +140,11 @@ const dateText = new Date(post.data.pubDate).toLocaleDateString('zh-CN', {
     gap: 0.4rem;
     margin-top: 0.1rem;
     font-size: 0.78rem;
-    color: #9ca3af;
+    color: var(--muted);
   }
   .tag {
-    background: #eef2ff;
-    color: #4f46e5;
+    background: #eef4f8;
+    color: var(--accent);
     border-radius: 999px;
     padding: 0.05rem 0.5rem;
     font-size: 0.72rem;

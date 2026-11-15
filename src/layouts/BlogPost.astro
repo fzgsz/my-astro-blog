@@ -5,18 +5,36 @@ import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
+import { SITE_TITLE } from '../consts';
 
 type Props = CollectionEntry<'blog'>['data'] & {
 	/** 像「关于我」这类固定页面不需要显示发布时间 */
 	hideDate?: boolean;
+	/** 预计阅读时长（分钟），由详情页计算后传入 */
+	readingTime?: number;
 };
 
-const { title, description, pubDate, updatedDate, heroImage, hideDate = false } = Astro.props;
+const {
+	title,
+	description,
+	pubDate,
+	updatedDate,
+	heroImage,
+	tags = [],
+	hideDate = false,
+	readingTime,
+} = Astro.props;
 ---
 
 <html lang="zh-CN">
 	<head>
-		<BaseHead title={title} description={description} />
+		<BaseHead
+			title={`${title} | ${SITE_TITLE}`}
+			description={description ?? title}
+			image={heroImage}
+			ogType="article"
+			publishedTime={pubDate}
+		/>
 		<style>
 			main {
 				width: calc(100% - 2em);
@@ -29,57 +47,90 @@ const { title, description, pubDate, updatedDate, heroImage, hideDate = false } 
 			.hero-image img {
 				display: block;
 				margin: 0 auto;
-				border-radius: 12px;
-				box-shadow: var(--box-shadow);
+				border-radius: 16px;
+				box-shadow: 0 12px 40px rgba(31, 35, 40, 0.08);
 			}
 			.prose {
-				width: 720px;
+				width: 700px;
 				max-width: calc(100% - 2em);
 				margin: auto;
-				padding: 1em;
-				color: rgb(var(--gray-dark));
+				padding: 1.4em 1em 2em;
+				color: var(--text);
 			}
 			.title {
-				margin-bottom: 1em;
-				padding: 1em 0;
+				margin-bottom: 1.2em;
+				padding: 1.2em 0 0.4em;
 				text-align: center;
-				line-height: 1;
+				line-height: 1.3;
 			}
 			.title h1 {
-				margin: 0 0 0.5em 0;
+				margin: 0 0 0.6em;
 			}
-			.date {
-				margin-bottom: 0.5em;
-				color: rgb(var(--gray));
+			.post-meta {
+				display: flex;
+				gap: 0.5rem;
+				justify-content: center;
+				align-items: center;
+				flex-wrap: wrap;
+				color: var(--muted);
+				font-size: 0.9rem;
+				margin-bottom: 0.6rem;
 			}
-			.last-updated-on {
-				font-style: italic;
+			.post-meta .dot {
+				color: var(--border);
+			}
+			.post-tags {
+				display: flex;
+				gap: 0.4rem;
+				justify-content: center;
+				flex-wrap: wrap;
+				margin: 0 0 1.2rem;
+			}
+			.post-tags a {
+				font-size: 0.76rem;
+				color: var(--accent);
+				background: #eef4f8;
+				border: 1px solid #d7e3ec;
+				border-radius: 999px;
+				padding: 0.15rem 0.65rem;
+				text-decoration: none;
+			}
+			.post-tags a:hover {
+				background: #e2edf5;
+			}
+			hr {
+				margin: 1.6em 0 0;
 			}
 		</style>
 	</head>
 
 	<body>
+		<div class="reading-progress" aria-hidden="true"><span id="reading-progress-bar"></span></div>
 		<Header />
 		<main>
 			<article>
 				<div class="hero-image">
-					{heroImage && <Image width={1020} height={510} src={heroImage} alt="" />}
+					{heroImage && <Image width={1020} height={510} src={heroImage} alt={title} />}
 				</div>
 				<div class="prose">
 					<div class="title">
 						{
 							!hideDate && (
-								<div class="date">
+								<div class="post-meta">
 									<FormattedDate date={pubDate} />
-									{updatedDate && (
-										<div class="last-updated-on">
-											Last updated on <FormattedDate date={updatedDate} />
-										</div>
-									)}
+									{readingTime && <span class="dot">·</span>}
+									{readingTime && <span>约 {readingTime} 分钟</span>}
 								</div>
 							)
 						}
 						<h1>{title}</h1>
+						{tags.length > 0 && (
+							<div class="post-tags">
+								{tags.map((tag) => (
+									<a href={`/tags/${encodeURIComponent(tag)}`}>{tag}</a>
+								))}
+							</div>
+						)}
 						<hr />
 					</div>
 					<slot />
@@ -87,5 +138,81 @@ const { title, description, pubDate, updatedDate, heroImage, hideDate = false } 
 			</article>
 		</main>
 		<Footer />
+
+		<script>
+			// 阅读进度
+			const bar = document.getElementById('reading-progress-bar');
+			const updateProgress = () => {
+				if (!bar) return;
+				const doc = document.documentElement;
+				const max = doc.scrollHeight - doc.clientHeight;
+				const ratio = max > 0 ? doc.scrollTop / max : 0;
+				bar.style.transform = `scaleX(${Math.min(1, Math.max(0, ratio))})`;
+			};
+			document.addEventListener('scroll', updateProgress, { passive: true });
+			updateProgress();
+
+			// 自动生成目录
+			const prose = document.querySelector('.prose');
+			const headings = prose
+				? Array.from(prose.querySelectorAll('h2, h3')).filter((heading) => heading.textContent?.trim())
+				: [];
+			if (headings.length >= 2) {
+				const nav = document.createElement('nav');
+				nav.className = 'toc';
+				nav.setAttribute('aria-label', '文章目录');
+
+				const label = document.createElement('p');
+				label.className = 'toc-title';
+				label.textContent = '目录';
+				nav.appendChild(label);
+
+				const list = document.createElement('ol');
+				headings.forEach((heading, index) => {
+					if (!heading.id) heading.id = `section-${index + 1}`;
+					const item = document.createElement('li');
+					if (heading.tagName === 'H3') item.className = 'toc-h3';
+					const link = document.createElement('a');
+					link.href = `#${heading.id}`;
+					link.textContent = heading.textContent?.trim() ?? '';
+					item.appendChild(link);
+					list.appendChild(item);
+				});
+				nav.appendChild(list);
+				document.body.appendChild(nav);
+			}
+
+			// 代码块复制
+			const copyText = async (text: string) => {
+				try {
+					await navigator.clipboard.writeText(text);
+					return true;
+				} catch {
+					const area = document.createElement('textarea');
+					area.value = text;
+					document.body.appendChild(area);
+					area.select();
+					const ok = document.execCommand('copy');
+					area.remove();
+					return ok;
+				}
+			};
+
+			document.querySelectorAll('.prose pre').forEach((pre) => {
+				const button = document.createElement('button');
+				button.type = 'button';
+				button.className = 'copy-btn';
+				button.textContent = '复制';
+				button.addEventListener('click', async () => {
+					const code = pre.querySelector('code')?.innerText ?? '';
+					const ok = await copyText(code);
+					button.textContent = ok ? '已复制' : '复制失败';
+					setTimeout(() => {
+						button.textContent = '复制';
+					}, 1500);
+				});
+				pre.appendChild(button);
+			});
+		</script>
 	</body>
 </html>

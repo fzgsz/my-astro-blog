@@ -19,6 +19,8 @@ const blog = defineCollection({
 			tags: z.array(z.string()).default([]),
 			// 标记为精选，用于首页单独推荐
 			featured: z.boolean().default(false),
+			// 草稿：true 时不出现在首页、列表、标签页和 RSS 中
+			draft: z.boolean().default(false),
 		}),
 });
 

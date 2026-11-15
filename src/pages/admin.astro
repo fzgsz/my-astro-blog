@@ -22,7 +22,7 @@ const isDev = import.meta.env.DEV;
         <header class="topbar">
           <div>
             <h1>写作台</h1>
-            <p class="sub">写完点「发布」，文件自动存进 <code>src/content/blog/</code></p>
+            <p class="sub">写完点「保存」，文件自动存进 <code>src/content/blog/</code>；勾选草稿暂不上线</p>
           </div>
           <span class="badge">仅本地可用</span>
         </header>
@@ -44,6 +44,10 @@ const isDev = import.meta.env.DEV;
             <span>链接标识</span>
             <input id="f-slug" type="text" placeholder="英文或拼音，留空则用日期" autocomplete="off" />
           </label>
+          <div class="field field--check">
+            <span>状态</span>
+            <label class="check"><input id="f-draft" type="checkbox" /> 草稿（不发布）</label>
+          </div>
         </section>
 
         <div class="toolbar">
@@ -70,8 +74,10 @@ const isDev = import.meta.env.DEV;
         </div>
 
         <footer class="actions">
-          <button type="button" class="primary" id="btn-save">发布</button>
+          <button type="button" class="primary" id="btn-save">保存</button>
+          <button type="button" class="ghost" id="btn-copy">复制发布命令</button>
           <span class="status" id="status"></span>
+          <span class="counter" id="counter"></span>
         </footer>
       </div>
     ) : (
@@ -96,6 +102,9 @@ const isDev = import.meta.env.DEV;
     const preview = $('preview');
     const statusEl = $('status');
     const saveBtn = $('btn-save');
+    const draftEl = $('f-draft');
+    const counterEl = $('counter');
+    const copyBtn = $('btn-copy');
 
     // 元素不存在说明当前不是本地环境，直接跳过全部逻辑
     if (editor && preview && saveBtn) {
@@ -108,6 +117,7 @@ const isDev = import.meta.env.DEV;
           .replace(/`([^`]+)`/g, '<code>$1</code>')
           .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
           .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+          .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />')
           .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
 
       function renderMarkdown(src) {
@@ -240,6 +250,7 @@ const isDev = import.meta.env.DEV;
               description: descEl.value,
               tags: tagsEl.value,
               slug: slugEl.value,
+              draft: draftEl ? draftEl.checked : false,
               content: editor.value,
             }),
           });
@@ -247,8 +258,14 @@ const isDev = import.meta.env.DEV;
 
           if (!data.ok) throw new Error(data.error || '保存失败');
 
+          try {
+            localStorage.removeItem('blog-writer-autosave-v1');
+          } catch (e) {
+            /* 忽略 */
+          }
           setStatus(
-            `${data.overwritten ? '已覆盖' : '已创建'} ${data.path}　→　跑 pnpm ship 发布上线`,
+            `${data.overwritten ? '已覆盖' : '已创建'} ${data.path}` +
+              (draftEl && draftEl.checked ? '（草稿，不会上线）' : '　→　跑 pnpm ship 发布上线'),
             'ok',
           );
         } catch (err) {
@@ -258,7 +275,137 @@ const isDev = import.meta.env.DEV;
         }
       });
 
+      /* ── 自动保存到 localStorage ── */
+      const DRAFT_KEY = 'blog-writer-autosave-v1';
+      let autosaveTimer = null;
+
+      function snapshot() {
+        return {
+          title: titleEl.value,
+          description: descEl.value,
+          tags: tagsEl.value,
+          slug: slugEl.value,
+          draft: draftEl ? draftEl.checked : false,
+          content: editor.value,
+          savedAt: Date.now(),
+        };
+      }
+
+      function saveLocal() {
+        try {
+          localStorage.setItem(DRAFT_KEY, JSON.stringify(snapshot()));
+        } catch (e) {
+          /* 隐私模式下 localStorage 可能不可用，忽略 */
+        }
+      }
+
+      function scheduleSave() {
+        clearTimeout(autosaveTimer);
+        autosaveTimer = setTimeout(saveLocal, 800);
+      }
+
+      function restoreDraft() {
+        let raw = null;
+        try {
+          raw = localStorage.getItem(DRAFT_KEY);
+        } catch (e) {
+          return;
+        }
+        if (!raw) return;
+        let data = null;
+        try {
+          data = JSON.parse(raw);
+        } catch (e) {
+          return;
+        }
+        if (!data || !String(data.content || '').trim()) return;
+        if (!confirm('检测到上次未发布的草稿，是否恢复？')) return;
+        titleEl.value = data.title || '';
+        descEl.value = data.description || '';
+        tagsEl.value = data.tags || '';
+        slugEl.value = data.slug || '';
+        if (draftEl) draftEl.checked = !!data.draft;
+        editor.value = data.content || '';
+        updatePreview();
+        updateCounter();
+        setStatus('已恢复上次的草稿');
+      }
+
+      function updateCounter() {
+        const text = editor.value;
+        const cjk = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
+        const words = (text.replace(/[\u4e00-\u9fa5]/g, ' ').match(/[A-Za-z0-9_]+/g) || []).length;
+        const total = cjk + words;
+        const minutes = Math.max(1, Math.ceil(total / 400));
+        if (counterEl) counterEl.textContent = `${total} 字 · 约 ${minutes} 分钟`;
+      }
+
+      async function uploadImage(file) {
+        setStatus('图片上传中…');
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        const base64 = String(dataUrl).split(',')[1] || '';
+        const res = await fetch('/__writer/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: file.name || 'image.png', data: base64 }),
+        });
+        const json = await res.json();
+        if (!json.ok) throw new Error(json.error || '上传失败');
+        return json.url;
+      }
+
+      function insertAtCursor(text) {
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        editor.setRangeText(text, start, end, 'end');
+        editor.focus();
+        updatePreview();
+        updateCounter();
+        scheduleSave();
+      }
+
+      editor.addEventListener('paste', async (event) => {
+        const items = Array.from(event.clipboardData?.items || []);
+        const imageItem = items.find((item) => item.type.startsWith('image/'));
+        if (!imageItem) return;
+        event.preventDefault();
+        const file = imageItem.getAsFile();
+        if (!file) return;
+        try {
+          const url = await uploadImage(file);
+          insertAtCursor(`\n![图片](${url})\n`);
+          setStatus(`图片已插入：${url}`, 'ok');
+        } catch (err) {
+          setStatus(`图片上传失败：${err.message}`, 'error');
+        }
+      });
+
+      editor.addEventListener('input', () => {
+        updateCounter();
+        scheduleSave();
+      });
+      window.addEventListener('beforeunload', saveLocal);
+
+      if (copyBtn) {
+        copyBtn.addEventListener('click', async () => {
+          const command = `pnpm ship "更新博客 ${new Date().toLocaleDateString('zh-CN')}"`;
+          try {
+            await navigator.clipboard.writeText(command);
+            setStatus('发布命令已复制，去终端粘贴执行', 'ok');
+          } catch (err) {
+            setStatus(`复制失败，请手动执行：${command}`, 'error');
+          }
+        });
+      }
+
+      updateCounter();
       updatePreview();
+      restoreDraft();
     }
   </script>
 
@@ -312,7 +459,7 @@ const isDev = import.meta.env.DEV;
 
     .meta {
       display: grid;
-      grid-template-columns: 2fr 2fr 1.4fr 1.2fr;
+      grid-template-columns: 2fr 2fr 1.4fr 1.2fr auto;
       gap: 0.75rem;
       margin-bottom: 0.75rem;
     }
@@ -484,6 +631,39 @@ const isDev = import.meta.env.DEV;
     }
     .status--ok { color: #16a34a; }
     .status--error { color: #dc2626; }
+
+    .field--check {
+      justify-content: flex-start;
+    }
+    .check {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.88rem;
+      color: #374151;
+      padding-top: 0.4rem;
+      white-space: nowrap;
+    }
+    .check input {
+      width: 1rem;
+      height: 1rem;
+      margin: 0;
+    }
+    .counter {
+      margin-left: auto;
+      color: #6b7280;
+      font-size: 0.82rem;
+      white-space: nowrap;
+    }
+    .actions .ghost {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      color: #374151;
+    }
+    .actions .ghost:hover {
+      border-color: #c7d2fe;
+      color: #2563eb;
+    }
 
     .offline {
       max-width: 34rem;
