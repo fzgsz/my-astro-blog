@@ -7,7 +7,8 @@ import { spawn } from 'node:child_process';
 const PORT = 4321;
 const URL = `http://localhost:${PORT}/admin`;
 
-const dev = spawn('astro', ['dev', '--port', String(PORT)], {
+// 用整条命令字符串，避免 shell:true + 参数数组触发 DEP0190 警告
+const dev = spawn(`astro dev --port ${PORT}`, {
   stdio: 'inherit',
   shell: true,
 });
