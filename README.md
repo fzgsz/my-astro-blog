@@ -108,6 +108,18 @@ pnpm dev
 
 ---
 
+## 桌面快捷方式（Windows）
+
+- **写作台**：双击桌面的「写作台」，等价于 pnpm write；
+- **发布博客**：双击桌面的「发布博客」，先显示 git status，确认后执行 pnpm ship。
+
+对应的命令行：
+
+`at
+pnpm write
+node scripts/publish.mjs
+`
+
 ## 深色模式
 
 右上角有太阳/月亮图标：
